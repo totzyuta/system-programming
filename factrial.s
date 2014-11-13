@@ -1,8 +1,8 @@
   .text
   .globl  main
 main:
-  subu  $sp,$sp,32  # Stack frame is 32 bytes long
-  sw    $ra,20($sp) # Save return address
+  subu  $sp,$sp,32  # Stack frame is 32 bytes long ($sp = $sp - 32)
+  sw    $ra,20($sp) # Save return address (
   sw    $fp,16($sp) # Save old frame pointer
   addiu $fp,$sp,28  # Set up frame pointer
   
@@ -49,4 +49,3 @@ $L1:                # Result is in $v0
   lw    $fp,16($sp) # Restore $fp
   addiu $sp,$sp,32  # Pop stack
   jr    $ra         # Return to caller
-

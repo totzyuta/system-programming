@@ -1,8 +1,9 @@
   .text                 # text segument
-  .align  2             # within 4 bytes
-main:                   
-  move    $a0,$zero     # main (start from here)
-  li      $v1,1         # $a0 : SUM = 0
+  .align  2             # within 4 bytes (2^2)
+
+main:                   # main (start from here)
+  move    $a0,$zero     # $a0 : SUM = 0
+  li      $v1,1         # $v1 : COUNT = 1
 loop:   
   addu    $a0,$a0,$v1   # SUM += COUNT
   addu    $v1,$v1,1     # COUNT++
