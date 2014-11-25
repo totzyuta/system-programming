@@ -6,7 +6,6 @@ main:
   sw    $fp, 16($sp)  # Save old frame pointer (古いフレームポインタを退避)
   addiu $fp, $sp, 28  # Set up frame pointer
 
-  # li    $a0, 10       # Put argument (10) in $a0
   li    $a0, 10       # Put argument (10) in $a0
   jal   fact          # Call factorial function
 
