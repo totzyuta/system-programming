@@ -1,70 +1,35 @@
-  .text
-  .globl main
-main:
-  subu  $sp, $sp, 32  # Length of stack frame: 32 bytes
-  sw    $ra, 20($sp)  # Save return address (戻りアドレスを退避)
-  sw    $fp, 16($sp)  # Save old frame pointer (古いフレームポインタを退避)
-  addiu $fp, $sp, 28  # Set up frame pointer
-
-  # li    $a0, 10       # Put argument (10) in $a0
-  li    $a0, 10       # Put argument (10) in $a0
-  jal   fact          # Call factorial function
-
-  la    $a0, str      # Put format string in $a0
-  move  $a1, $v0      # Move fact result to $a1
-  jal   printf        # Call the print function
-
-  lw    $ra, 20($sp)  # Restore return address
-  lw    $fp, 16($sp)  # Restore frame pointer
-  addiu $sp, $sp, 32  # Pop stack frame
-  jr    $ra           # Return to caller
-
-  .data
-str:
-  .asciiz  "The factorial of 10 is "
-
-  .text
-fact:
-  subu  $sp, $sp, 32 # Stack frame is 32 bytes long
-  sw    $ra, 20($sp) # Save return address
-  sw    $fp, 16($sp) # Save frame pointer
-  addiu $fp, $sp, 28 # Set up frame pointer
-  sw    $a0, 0($fp)  # Save argument (n)
-
-  lw    $v0, 0($fp)  # Load n
-  bgtz  $v0, $L2     # Branch if n > 0
-  li    $v0, 1       # Return 1
-  jr    $L1          # Jump to code to return
-
-$L2:
-  lw    $v1, 0($fp)   # Load n
-  subu  $v0, $v1, 1   # Compute n - 1
-  move  $a0, $v0      # Move value to $a0
-  jal   fact          # Call factorial function
-
-  lw    $v1, 0($fp)   # Load n
-  mul   $v0, $v0, $v1 # Compute fact(n-1) * n
-
-$L1:                  # Result is in $v0
-  lw    $ra, 20($sp)  # Restore $ra
-  lw    $fp, 16($sp)  # Restore $fp
-  addiu $sp, $sp, 32  # Pop stack
-  jr    $ra
-
-  .text
-printf:
-  subu  $sp, $sp, 32 # Stack frame is 32 bytes long
-  sw    $ra, 20($sp) # Save return address
-  sw    $fp, 16($sp) # Save frame pointer
-  addiu $fp, $sp, 28 # Set up frame pointer
-  
-  li    $v0, 4        # syscall of print_string
-  syscall             # Print format string
-  li    $v0, 1        # syscal of print_int
-  move  $a0, $a1      # Move $a1 to $a0 for syscall
-  syscall             # Print n
-
-  lw    $ra, 20($sp)  # Restore $ra
-  lw    $fp, 16($sp)  # Restore $fp
-  addiu $sp, $sp, 32  # Pop stack
-  jr    $ra
+            .text
+            .align 2
+prime:      li    $t0, 2          # number to loop and divide (i)
+Loop_prime: beq   $t0, $s3, return1 # return1 if n is prime number 
+            bgt   $t0, $s3, Exit_prime # break the loop if n > i
+            rem   $t1, $s3, $t0   # $t1 = n % i
+            beqz  $t1, Exit_prime # goto Exit_prime if $t1 == 0
+            addi  $t0, $t0, 1     # increment i
+            j     Loop_prime      # loop again with incremented i
+return1:    li    $v0, 1          
+            j     $ra             # return 1 
+Exit_prime: li    $v0, 0         
+            j     $ra             # return 0 
+            .data
+space:      .asciiz " "        
+            .text
+            .align 2
+main:       li    $s0, 100        # set maximum number (match number)
+            li    $s1, 0          # number of loop
+            li    $s3, 2          # number to check and print (n)
+            li    $s7, 1          # for comparing
+Loop:       beq   $s0, $s1, Exit  # break if $s1==100
+            jal   prime           # $v0 = prime
+            bne   $v0, $s7, Else  # go to Else if prime(n)!=1
+            li    $v0, 1          # for syscall of print_int
+            move  $a0, $s3        # put the prime number
+            syscall               # print the prime number
+            li    $v0, 4          # for syscall of print_string
+            la    $a0, space      # " "
+            syscall               # print " "
+            addi  $s1, $s1, 1     # increase the number of prime number
+Else:   
+            addi  $s3, $s3, 1     # n = n + 1 
+            j     Loop            # go to Loop
+Exit:       j     $ra

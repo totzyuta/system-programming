@@ -1,13 +1,13 @@
   .text
   .globl main
 main:
-  subu  $sp, $sp, 32  # Length of stack frame: 32 bytes
-  sw    $ra, 20($sp)  # Save return address (戻りアドレスを退避)
-  sw    $fp, 16($sp)  # Save old frame pointer (古いフレームポインタを退避)
-  addiu $fp, $sp, 28  # Set up frame pointer
+  subu  $sp, $sp, 32  # (1) Length of stack frame: 32 bytes
+  sw    $ra, 20($sp)  # (2) Save return address
+  sw    $fp, 16($sp)  # (2) Save old frame pointer
+  addiu $fp, $sp, 28  # (3) Set up frame pointer
 
-  li    $a0, 10       # Put argument (10) in $a0
-  jal   fact          # Call factorial function
+  li    $a0, 10       # (1) Put argument (10) in $a0
+  jal   fact          # (3) Call factorial function
 
   la    $a0, str      # Put format string in $a0
   move  $a1, $v0      # Move fact result to $a1
