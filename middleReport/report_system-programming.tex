@@ -1,0 +1,715 @@
+\documentclass[a4j]{jarticle}
+
+\usepackage{listings}
+
+\lstset{%
+  language={},
+  basicstyle={\small\ttfamily},%
+  identifierstyle={\small},%
+  commentstyle={\small\itshape},%
+  keywordstyle={\small\bfseries},%
+  ndkeywordstyle={\small},%
+  stringstyle={\small\ttfamily},
+  frame={tb},
+  breaklines=true,
+  columns=[l]{fullflexible},%
+  numbers=left,%
+  xrightmargin=0zw,%
+  xleftmargin=3zw,%
+  numberstyle={\scriptsize},%
+  stepnumber=1,
+  numbersep=1zw,%
+  lineskip=-0.5ex%
+}
+
+\title{システムプログラミング\\中間レポート}
+\author{\\学籍番号：09425566\\氏名：佐藤 佑太}
+\date{出題日：2014/11/20\\提出日：2014/11/27\\締切り日：2014/11/27\\}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+
+
+%
+%	SECTION 1
+%
+
+\section{概要}
+
+このレポートでは，以下に与えられる５つの課題に関しての考察，またそのプログラムを作成する過程を示すものである．ただし，プログラムはMIPSアセンブリ言語で記述し，SPIMを用いて動作を確認する．
+
+また，課題２に関しては第6章において考察する．
+
+
+\begin{enumerate}
+
+\item 教科書，（以下教科書はコンピュータの構成と設計（パターソン＆ヘネシー）第四版を指すこととする）B.8節．「入力と出力」に示されている方法と，B.9節「システムコール」に示されている方法のそれぞれで，"Hello World"を表示せよ．両者の方式を比較し考察せよ．
+
+
+\item アセンブリ言語中で使用する .data  .text および .align とは何か解説せよ．下記コード中の6行目の .data がない場合，どうなるかについて考察せよ．
+
+{\baselineskip 3mm
+\begin{verbatim}
+ 1:         .text
+ 2:         .align  2
+ 3: _print_message:
+ 4:         la      $a0, msg
+ 5:         li      $v0, 4
+ 6:         .data
+ 7:         .align  2
+ 8: msg:
+ 9:         .asciiz "Hello!!\n"
+10:         .text
+11:         syscall
+12:         j       $ra
+13: main:
+14:         subu    $sp, $sp, 24
+15:         sw      $ra, 16($sp)
+16:         jal     _print_message
+17:         lw      $ra, 16($sp)
+18:         addu    $sp, $sp, 24
+19:         j       $ra
+\end{verbatim}
+}
+
+\item 教科書B.6節「手続き呼び出し規約」に従って，関数factを実装せよ．（以降の課題においては，この規約に全て従うこと）factをC言語で記述した場合は，以下のようになる．
+
+{\baselineskip 3mm
+\begin{verbatim}
+ 1: main()
+ 2: {
+ 3:   print_string("The factorial of 10 is ");
+ 4:   print_int(fact(10));
+ 5:   print_string("\n");
+ 6: }
+ 7: 
+ 8: int fact(int n)
+ 9: {
+10:   if (n < 1)
+11:     return 1;
+12:   else
+13:     return n * fact(n - 1);
+14: }
+\end{verbatim}
+}
+
+\item 素数を最初から100番目まで求めて表示するMIPSアセンブリ言語プログラムを作成してテストせよ．その際，素数を求めるために下記の2つのルーチンを作成すること．
+
+\begin{center}
+\begin{tabular}{lclcl}\hline
+\centering
+関数名&概要\\ \hline
+prime(n)&nが素数なら1, そうでなければ0を返す\\ \hline
+main()&整数を順々に素数判定し，100個プリント\\ \hline
+\end{tabular}
+\end{center}
+
+C言語を用いた例．
+
+{\baselineskip 3mm
+\begin{verbatim}
+ 1: int prime(int n)
+ 2: {
+ 3:   int i;
+ 4:   for (i = 2; i < n; i++){
+ 5:     if (n % i == 0)
+ 6:       return 0;
+ 7:   }
+ 8:   return 1;
+ 9: }
+10: 
+11: int main()
+12: {
+13:   int match = 0, n = 2;
+14:   while (match < 100){
+15:     if (prime(n) == 1){
+16:       print_int(n);
+17:       print_string(" ");
+18:       match++;
+19:     }
+20:     n++;
+21:   }
+22:   print_string("\n");
+23: }
+\end{verbatim}
+}
+
+実行例：
+
+{\baselineskip 3mm
+\begin{verbatim}
+  2   3   5   7  11  13  17  19  23  29
+ 31  37  41  43  47  53  59  61  67  71
+ 73  79  83  89  97 101 103 107 109 113
+127 131 137 139 149 151 157 163 167 173
+179 181 191 193 197 199 211 223 227 229
+233 239 241 251 257 263 269 271 277 281
+283 293 307 311 313 317 331 337 347 349
+353 359 367 373 379 383 389 397 401 409
+419 421 431 433 439 443 449 457 461 463
+467 479 487 491 499 503 509 521 523 541
+\end{verbatim}
+}
+
+
+\item 素数を最初から100番目まで求めて表示するMIPSアセンブリ言語プログラムを作成してテストせよ．ただし，配列に実行結果を保存するようにmain部分を改造し，ユーザの入力によって任意の番目の配列要素を表示可能にせよ．
+
+C言語を用いた例．
+
+{\baselineskip 3mm
+\begin{verbatim}
+ 1: int primes[100];
+ 2: int main()
+ 3: {
+ 4:   int match = 0, n = 2;
+ 5:   while (match < 100){
+ 6:     if (prime(n) == 1){
+ 7:       primes[match++] = n;
+ 8:     }
+ 9:     n++;
+10:   }
+11:   for (;;){
+12:     print_string("> ");
+13:     print_int(primes[read_int() - 1]);
+14:     print_string("\n");
+15:   }
+16: }
+\end{verbatim}
+}
+
+
+実行例：
+
+{\baselineskip 3mm
+\begin{verbatim}
+> 15
+47
+> 100
+541
+\end{verbatim}
+}
+
+
+\end{enumerate}
+
+
+%
+%	SECTION 2
+%
+
+\section{プログラムの作成方針}
+
+今回はプログラムが比較的大きくなる課題3,4,5について，プログラムを作成していくための方針をここで示す．
+
+\subsection{課題3}
+
+課題3では，２つの部分に分けて関数を作成する．処理の概要は以下の通りに定め，下記でそれぞれについて解説する．
+
+\begin{itemize}
+\item[(1)]メインとなる処理を行うmain部
+\item[(2)]再帰を用いて与えられた引数の階乗を計算するfact部
+\item[(3)]結果を表示するprint部
+\end{itemize}
+
+まず，(1)メインとなる処理を行うmain部では，fact関数に求めたい階乗の値を引数と与え，返ってきた数値をコンソールへの出力を行うprint関数に渡す処理を行う．
+
+そして(2)のfact部では，再帰を用いて与えられた引数の階乗を計算し，それを値とし最終的な値として返す関数を作成する．
+
+(3)ではmain関数から与えられた数値をもとにコンソールへの出力を行う． 
+
+また，出力は以下のように定める．
+
+{\baselineskip 3mm
+\begin{verbatim}
+The factorial of 10 is 3628800
+\end{verbatim}
+}
+
+
+\subsection{課題4}
+
+課題4では，以下の２つの関数を作成する．処理の概要は以下の通りに定め，下記でそれぞれについて解説する
+
+\begin{itemize}
+\item[(1)]与えられた引数が素数なら1，そうでなければ0を返す関数prime(n)
+\item[(2)]整数を順々に素数判定し，先頭から100個をプリントするmain関数
+\end{itemize}
+
+
+(1)prime(n)関数では，与えられた値に対してその数を素数かどうか判定し，引数が素数であれば1を，そうでなければ0を返す．
+(2)main関数では，順に値をprime(n)関数に与えていきた，100番目までの素数を数えて素数であるものだけを出力する．
+
+\subsection{課題5}
+
+課題5では，課題4で作成したプログラムのmain部分を改造し，素数を配列に実行しながらかつユーザの入力nに対してn番目の配列要素を出力するプログラムを作成する．
+
+また，ユーザが実際に用いることを想定し，簡潔なエラー処理なども行う．
+
+
+
+
+%
+%	SECTION 3
+%
+
+\section{プログラムリストおよび、その説明}
+
+それぞれの課題について，完成したプログラムを末尾に添付する．このセクションでは，プログラムの主な構造について説明する．
+
+\subsection{課題1}
+
+まず，添付したプログラムputc.sで"Hello World"がコンソール上に出力される仕組みについて説明する．
+
+端末装置は レシーバと トランスミッタの２つの独立したユニットで構成され、それぞれの役割は以下となる。
+
+\begin{itemize}
+\item[(1)]レシーバ：キーバードから入力された文字を読み取る
+\item[(2)]トランスミッタ：コンソールに文字を表示する。
+\end{itemize}
+
+プログラムを作成する際には，この２つを独立したものとして切り離して考えることが重要である．
+
+これはMIPSの「メモリマップ方式」を利用した表示の仕方である．「メモリマップ方式」とは各レジスタに特定のメモリロケーションが割り当てられていることで、レシーバ制御レジスタ (Receiver Control register)のアドレスはffff0000(16)で、読み出し専用。ビット0（１桁目）を「レディ」と呼び、1だとキーボードから文字が入力されたけどReciver Data registerからまだ読み出されてない、という意味になる。
+
+Reciever Data registerにはキーボードからの入力が格納され、このレジスタからデータが呼び出されるとレディビットは0に設定し直される。
+
+これと逆で、トランスミッタ制御レジスタとトランスミッタデータレジスタもそれぞれ反対に今度は出力の作業をするためのレジスタとして割り振られている。
+
+Transmitter Control registerはのアドレスはffff0008(16)であり，このレジスタも下位2ビットのみが用いられる．同様にビット0が「レディ」と呼ばれ，読み出し専用である．このビットが1であると，トランスミッタは出力用の新しい文字を受け取る用意ができているという意味である．このビットが0であると，トランスミッタはまだ前の文字を書き出し中である．ビット1は「割り込み許可」ビットであり，読み出しも書き出しも可能である．このビットが1に設定されると新しい文字の準備ができ，レディビットが1であれば端末はハードウェアレベル１の割り込みを要求する．
+
+このプログラム作成にあたり特に重要となるポイントは以下である．
+
+\begin{itemize}
+\item[1]アドレス0xffff0008はトランスミッタ制御に割り当てられている
+\item[2]アドレス0xffff000cはトランスミッタデータに割り当てられている
+\end{itemize}
+
+これらのことを理解しておけばどこのレジスタに書き込みを行った時にtランスみったがコンソール上に文字を表示してくれるのか把握することができる．
+
+4行目のmain部分では，各文字を引数と取り扱うレジスタである\$a0に格納している．それを一文字ずつputc関数に渡し，表示の作業を任せる．それを一文字ずつ繰り返し，"Hello World"という文字列を最終的にコンソールに表示している．5行目では，戻りアドレス\$raがputc関数内で上書きされてしまわないよう，\$sレジスタに退避している．
+
+34行目以降のputc部分では，35行目でアドレス0xffff0008のデータ，Transmitter Control registerのビット0「レディ」を\$t0にロードしている．
+
+36-38行目で\$t0の値を調べ，「レディ」が1であれば39行目でアドレス0xffff000cのレジスタ，つまりTransmitter Data registerにmainから受け取った文字のデータを格納する．Transmitter Data registerはコンソールに出力するための部分にデータが格納されたため，その文字をコンソール上に表示する．
+
+次に，OSのサービスを使ってコンソール上に文字列を表示する方法を説明する．
+
+SPIMでオペレーティングシステム的なサービスを実行するためには，システムコール(syscall)という命令を使うことになっている．
+
+syscallを使い，サービスを要求する手順は以下のようにまとめることができる．
+
+\begin{itemize}
+\item[1]1. レジスタ\$v0に使いたいサービスのシステムコールコードを格納
+\item[2]2. 引数をレジスタ\$a0から\$a3（浮動小数点数の値は\$f12）にロード
+\item[3]3. 値を返すシステムコールは結果をレジスタ\$v0（浮動小数点数の値の場合は\$f0）に収める
+\item[4]4. syscallで実行
+\end{itemize}
+
+
+サービスを使うためには手順１で\$v0に使いたいサービスの対応するデータをintで渡さなければならない．これをシステムコールコードという．(参考文献1 P.781参照)
+
+次に，作成したプログラムの説明をする．
+
+1-3行目で"Hello World"という文字列を，strというラベルをつけて保存している．
+
+5行目からのmain部分では，上記の手順に従いOSのサービスを要求している．Printのstringのシステムコールコードは4であり，これを\$v0に格納してsyscallを実行すればよい．また，引数は\$a0から\$3にロードする．6行目が手順１，7行目は手順2，8行目は手順3にあたる．
+
+
+\subsection{課題3}
+
+末尾に添付したプログラムfactorial.sについて説明する．
+
+まず，再帰的な構造を持つプログラムを作るにあたって、手続き呼び出し規約をしっかりと理解しなければいけない。そのために最初に手続き呼び出し規約に従って処理をする３つの局面をおさえておくことにする．
+
+参考文献2によると，
+
+\begin{quote}
+This convention comes into play at three pointes during a procedure call: immediately before the caller invokes the callee, just as the callee starts executing, and immediately before the callee returns to the caller.
+
+(参考文献2 Location 14781)
+\end{quote}
+
+とある．まとめると
+
+\begin{itemize}
+\item1. 呼び出し側が手続きを呼び出す直前
+\item2. 被呼び出し側がスタートした直後
+\item3. 被呼び出し側が呼び出し側に戻る直前
+\end{itemize}
+
+の３つで規約に従った処理を行わなければならない．
+
+まず，3行目のmainの部分で始めにこれらの規約に従った処理を行う．今回はmainが被呼び出し側になっていることに注意したい．被呼び出し側がスタックフレームを生成する過程で最初にすることは以下である．これは最初に言及した局面の2にあたる．
+
+\begin{quote}
+Before a called routine starts running, it must take the following steps to set up its stack frame:
+
+1. Allocate memory for the frame by subtracting the frame's size from the stack pointer.
+2. Save callee-saved registers in the frame. A callee must save the values in these registers (\$s0-\$s7, \$fp, and \$ra) before altering them, since the caller expects to fnd these registers unchanged after the call. Register \$fp is saved by every procedure that allocates a new stac frame. However, register \$ra only needs to be saved if the callee itself makes a call. The other callee-saved registers that are used also must be saved.
+3. Establish the frame pointer by adding the stack frame's size minus 4 to \$sp and storing the sum in register \$fp.
+(Location 14787)
+\end{quote}
+
+コメントのカッコ内の数字は上記1-3の処理にあたる．
+
+続いて10行目ではmainからfact関数を呼び出すため，今度はmainが呼び出し側となる．これは上記局面１にあたり，呼び出し側は，関数を呼び出す直前に手続き呼び出し規約に従ってスタックフレームを生成しなければならない．
+
+することは以下の３つである．
+
+\begin{quote}
+1. Pass arguments. By convention, the first four arguments are passed in registers \$a0-\$a3. Any remaining arguments are pushed on the stack and appear at the beginning of the called procedure's stack frame.
+2. Save caller-saved registers. The called procedure can use these registers(\$a0-\$a3 and \$t0-\$t9) without first saving their value. If the caller expects to use one of these registers after a call, it must save its value before the call.
+3. Execute a jal instruction (see Section 2.8 of Chapter 2), which jumps to the callee's first instruciton and saves the return address in register \$ra.  
+
+(参考文献２)
+\end{quote}
+
+9行目で階乗を求める10を\$a0に入れる。\$a0は引数として用いるレジスタである．fact関数で使う値を渡していて，手順1にあたる．
+
+ここでは呼び出し側で，被呼び出し側で使う値（\$a0-\$a3と\$t0-\$t9)を事前に保存（退避）しておく．これは \$t系のレジスタが被呼び出し側で使われて，変更されたとしても呼び出し側に戻ってきたときにそれを復元してもとの値として使えるようにするためだ．要するにMIPSアセンブリでは「\$aと\$t系レジスタは呼び出し間では保存されない」という規約を自分で厳守できるよう設定しなければならない．
+
+そして10行目でjal命令でfact関数を呼び出している．これは上記手順3にあたる．
+
+fact関数から帰ってきたあと，12-14行目でmain関数では適切なデータをレジスタに格納した後にprintf関数を呼び，コンソール上に結果を表示している．
+
+最後に，手続き呼び出し規約に従って処理を行う局面３があるので，それを実行している．mainが呼び出し側に戻る直前である．
+
+局面３で行う処理の概要は以下である．
+
+
+\begin{quote}
+Finally, after pointing the factorial, main returns. But first, it must restore the registers it saved and pop its stack frame.
+
+(参考文献2)
+\end{quote}
+
+そして具体的には以下の4つの処理を行う．
+
+\begin{quote}
+1. If the calle is a function that returns a value, place the returned value in register \$v0.
+2. Restore all callee-saved registers that were saved upon procedure entry.
+3. Pop the stack frame by adding the frame size to \$sp
+4. Return by jumping to the address in register \$ra
+(Location 14804)
+
+(参考文献2)
+\end{quote}
+
+
+mainは返り値がないので1の処理は行っていない．
+
+16行目でlwでスタックに格納（退避）しておいた戻りアドレス\$raとフレームポインタ\$fpを元あるべき場所に戻す。(手順2)
+
+17行目でスタックフレームを全て元どおり（サイズ０）にする。\$spに32足したら前確保した分が詰まり，元どおりになる。(手順3)
+
+18行目でjrでmainの値を返してプログラムは終了となる。(手順4)
+
+
+\subsection{課題4}
+
+
+\subsection{課題5}
+
+
+
+%
+%	SECTION 4
+%
+
+\section{プログラムの使用例・テスト}
+
+このセクションでは，プログラムの使用例を示しながら実際にテストを行う過程を示す．
+
+\subsection{課題1}
+
+プログラムを実行すると，Hello Worldという文字列をコンソール上に以下のように表示する．
+
+{\baselineskip 3mm
+\begin{verbatim}
+Hello World
+\end{verbatim}
+}
+
+
+\subsection{課題3}
+
+プログラムを実行すると，10の階乗の値をコンソール上に以下のように表示する．
+
+{\baselineskip 3mm
+\begin{verbatim}
+The factorial 10 is 3628800
+\end{verbatim}
+}
+
+
+\subsection{課題4}
+
+プログラムを実行すると，以下のように1〜100番目までの素数をコンソール上に表示する．  
+
+{\baselineskip 3mm
+\begin{verbatim}
+2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 
+83 89 97 101 103 107 109 113 127 131 137 139 149 151 157 163 
+167 173 179 181 191 193 197 199 211 223 227 229 233 239 241 
+251 257 263 269 271 277 281 283 293 307 311 313 317 331 337 
+347 349 353 359 367 373 379 383 389 397 401 409 419 421 431 
+433 439 443 449 457 461 463 467 479 487 491 499 503 509 521 
+523 541 
+\end{verbatim}
+}
+
+
+\subsection{課題5}
+
+プログラムを起動すると，まず以下のような簡単な使い方とインターフェースが表示される．
+
+{\baselineskip 3mm
+\begin{verbatim}
+Prime Number Searcher
+
+Which number is the prime number you want to know?
+- Type 1-100
+- To quit, type 0
+
+
+> 
+\end{verbatim}
+}
+
+ユーザは'＞'のあとに，知りたいn番目の素数に対するnを入力する．実際にいくつかの数値を入力してみた際の出力は以下となる．
+
+{\baselineskip 3mm
+\begin{verbatim}
+> 2
+3
+> 100
+541
+> 
+\end{verbatim}
+}
+
+また，このプログラムではユーザが使用することを想定し，0でプログラムを正常終了し，100以上の数値を入力するとエラー文を表示するようにした．
+
+{\baselineskip 3mm
+\begin{verbatim}
+> 102
+
+Please type correct number
+
+> 0
+
+Good bye :)
+\end{verbatim}
+}
+
+
+
+
+
+%
+%	SECTION 5
+%
+
+\section{プログラム作成における考察}
+
+各課題において，プログラム作成過程における考察を以下に示す．
+
+\subsection{課題1}
+
+プログラムを作成している過程で，以下のエラーが出た．
+
+\begin{quote}
+Instruction references undefined symbol at 0x00400014
+\end{quote}
+
+ステップ実行で確認してみたところ，jal命令においてmainがないというメッセージが出ていたのでmainを追加したところ，さらに次のようなエラーが出力された．
+
+\begin{quote}
+Attempt to execute non-instruction at 0x0040003c
+\end{quote}
+
+抜け出す処理が必要だと推定し，jr命令でmainから戻る設定を行うようにプログラムを書き直すと，正常に動作するようになった．
+
+以上のことから，main部分はプログラム開始時に，プログラムの内容に関わらず一番最初に呼ばれる処理が実行されていることがわかる．またこのことから，main部分に関しても呼び出し側に戻る必要があることもわかる．
+
+また，jal命令には，実行されると同時に\$raに自動で戻りアドレスを格納する機能があるということも推測できる．
+
+MIPSアセンブリ言語において，戻りアドレスを保持することは非常に重要なことであり，これをプログラマーが任意で値を書き換えないように注意しなければならないだろう．
+
+
+
+
+\subsection{課題3}
+
+\subsubsection{疑問点1}
+
+なぜスタックフレームを生成するには\$spから値を「引く」のか？
+
+\begin{quote}
+スタックポインタからフレームのサイズを引いて、フレーム用にメモリを割り当てる 
+
+(参考文献1 p. 764)
+\end{quote}
+
+スタックフレームは低位から高位のメモリアドレスにフレームを生成することを考えればわかりやすい．\$fpは最初初期値が\$spと同じように設定されていて、\$spから引いた数の分だけ\$spと\$fpの差は開き、そこがフーレムとして生成されることを考えればよい．
+
+これより，\$spから欲しいバイト分だけ値を引けば，その分下に伸びるイメージで確保領域が広くなっている．そして，\$fpはスタックからのデータ取得を簡易化するためのものなので，この原理を知り，4バイトずつ計算することができれば\$spのみでスタックを利用することもできる．
+
+\subsubsection{疑問点2}
+
+なぜスタックフレームの大きさは24バイト以上で，8バイト単位なのか？  
+
+\begin{quote}
+この最低限のフレームに４つの引数レジスタ (\$a0 - \$a3) と戻りアドレス\$raを、倍長語の境界に整列化して持たせることができる。mainでは\$fpも退避する必要があるので、スタックフレームを2語分大きくしなければならない。（スタックフレームは倍長語の境界に整列化されることに留意）(参考文献１P.766)
+
+The frame is larger than required for these two register because the calling convention requires the minimum size of a stack frame to be 24 bytes. This minimum frame can hold four argument registers (\$a0-\$a3) and the return address \$ra, padded to a double-word boundary (24 bytes). Since main also needs to save \$fp, its stack frame must be two words larger (remember: the stack pointer is kept doubleword aligned).（参考文献２）
+\end{quote}
+
+\$raと\$fa，またコンパイルする際に最低限ひつようであるから，スタックフレームは最低限24バイト必要である．
+
+よって，さらにデータを確保したい場合は，32バイト，40バイトとスタックフレームのサイズを大きくする必要がある．
+
+これはMIPSが32ビットコンピュータとして作動していることに由来している．
+
+整列化，つまり倍長語の8バイトずつデータを区切るのは32ビットコンピュータがデータの区切りを明確に理解しながらデータを読み込むことでより効率的に処理できるからである．
+
+
+
+
+\subsection{課題4}
+
+prime(n)関数では，今回はチェックしたい値に対して全ての数で割り，その余りを算出することで素数であるかどうかを判定したが，その部分のアルゴリズムはもっと簡略に書けるだろう．今回は時間を確保できなかったので，次の課題として挑戦したい．
+
+
+\subsection{課題5}
+
+今回の課題プログラムの中で唯一ユーザからの入力に対して動作を行うプログラムであったため，ユーザの想定を考えインストラクションとエラー処理，プログラムの正常終了を行うコマンドを実装した．
+
+エラー処理では，100より大きいあたいを入力すると「Please type correct number」というようなエラー文が表示され，次の処理に移るようプログラムを作成した．
+
+また，0でプログラムを正常終了させれるようにした．
+
+
+
+
+
+%
+%	SECTION 6
+%
+
+\section{得られた結果に関する，あるいは試問に対する回答}
+
+
+各課題において，得られた結果に関する，あるいは試問に対する回答を以下に示す．
+また，結果に対してわいたいくつかの疑問点とそれについての考察を記述する．
+
+
+\subsection{課題2}
+
+ピリオドで始まるシンボル名はアセンブラ指令と呼ばれ，これはプログラムを翻訳する方法をアセンブラに指示するものである．つまり，CPUが直接実行するわけではないが，プログラム実行に不可欠なデータの用意や，メモリ中におけるプログラムの配置をコントロールするこことがアセンブラ指令の目的である．
+
+それぞれに意味があり，簡略にまとめると以下のようになる．
+
+\begin{center}
+\begin{tabular}{lclcl}\hline
+シンボル&意味\\ \hline \hline
+.text&後続行に命令が含まれることを示す\\ \hline
+.data&後続の行にデータが含まれることを示す\\ \hline
+.align n&後続行中の項目を2のn乗バイトの境界に合わせて整列化しなければならい\\ \hline
+.global main&mainをグローバルな記号として宣言\\ \hline
+.asciiz&メモリ中に格納する文字列の末尾にnullを付加することを示す\\ \hline
+\end{tabular}
+\end{center}
+
+特に，.dataと.text，また.align nについて詳しく考察してみることにする．
+
+まず，.dataと.textは，メモリのどこにデータやテキストを格納するかを制御するためのものである．
+
+テキストデータはASCII tableに従った数字として最終的に保存されるため，テキストとしてのデータなのかそれ以外のデータなのか，コンピュータは判断することができない．そこで，アセンブラ指令を用いてもともとテキストとデータを保存する場所を区別するために.dataと.textを使い分ける必要があるのだろう．
+
+そのため，.dataがない場合，コンピュータはtext型のデータと勘違いしてしまい適切なデーtあセグメントにデータを配置できず，予期せぬ出力を行う可能性が有ると考えられる．
+
+次に，.align nというアセンブラ指令について考察してみる．
+
+MIPSは32ビットアーキテクチャである．それはつまり，4バイト分ずつデータを読み込んでいく，ということだ．このため，CPUが効率的に動くためには，4バイト分ずつきちんとデータが区切れている必要がある．
+
+データのサイズに合わせて，手動で間を埋めて整列させることもできるが，データの量が多くなると厳しい．そこで，それらの整列化を自動でやってくれるのが.align nというアセンブラ指令である．
+
+
+\subsection{課題3}
+
+手続き呼び出し規約におけるスタックフレームの生成に関して，
+
+\begin{quote}
+Register $fp is saved by every procedure that allocates a new stac frame. However, register $ra only needs to be saved if the callee itself makes a call.
+
+(参考文献2)
+\end{quote}
+
+という記述に気をつけたい．\$fpは被呼び出し側がさらに呼び出し側にならないケースでも必ず退避させなければならない．
+
+また，7行目でaddiu命令で\$fpに格納しているのが\$sp+28であるという部分．ここでは32バイト分のスタックフレームを生成しているが，フレームポインタの指し示す部分はそのマイナス４バイトである28となることでスタックの先頭，一つ目を\$fpが指すようにフレームポインタを設定できる．  
+
+
+疑問点1: 関数が返せる引数はひとつまでなのか
+
+スタックを使えば複数の値を擬似的に返すことはできるかもしれないが，規約には反しているかもしれない．
+
+疑問点2:  なぜ\$fpは必ず退避させなければならないのか
+
+呼び出し側がさらに呼び出し側になる場合\$raが退避させる必要はあるのは納得できるが，それ以外の時は退避する必要がないように思える．
+
+これに関しては「後半で\$fpを存分に使うのでそこで学べる」とうい回答をいただいた．
+
+疑問点3: mainからfactを呼ぶとき\$a0は退避しないでよいのか
+
+\$a0-\$a3は退避する必要がないのか．
+
+
+\newpage
+
+%
+%	SECTION 6
+%
+
+\section{作成したプログラムのソースコード}
+
+それぞれについて，作成したプログラムは以下である．
+
+\subsection{課題1}
+
+\lstinputlisting[caption=putc.s, label=putc.s]{./source/putc.s}
+
+\lstinputlisting[caption=putc2.s, label=putc2.s]{./source/putc2.s}
+
+\subsection{課題3}
+
+\lstinputlisting[caption=factorial.s, label=factorial.s]{./source/factorial.s}
+
+\subsection{課題4}
+
+\lstinputlisting[caption=prime.s, label=prime.s]{./source/prime.s}
+
+\subsection{課題5}
+
+\lstinputlisting[caption=prime2.s, label=prime2.s]{./source/prime2.s}
+
+
+%
+% SECTION 7
+%
+
+\section{参考文献}
+
+\begin{enumerate}
+\item コンピュータの構成と設計 第4版 上・下 ジョン・L. ヘネシー (著), デイビッド・A. パターソン (著), 成田 光彰 (翻訳)
+\item Computer Organization and Design, Fifth Edition: The Hardware/Software Interface (The Morgan Kaufmann Series in Computer Architecture and Design) by David A. Patterson (Author), John L. Hennessy  (Author)
+\end{enumerate}
+
+
+\end{document}
+
