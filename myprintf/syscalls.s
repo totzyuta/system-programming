@@ -1,16 +1,12 @@
   .text
   .align  2
 
-_myprintf:            # Main function
+_print_character:
   subu  $sp, $sp, 24
   sw    $ra, 20($sp)
 
-# Branch by arguments
-
-  li    $t0, 100      # "d" = 100
-  beq   $a0, $t0, print_int   # goto print_int if $a0 = "d"
-
-# Call each functions
+  li    $v0, 4  # 4: print_string
+  syscall
 
   lw    $ra, 20($sp)
   addu  $sp, $sp, 24
