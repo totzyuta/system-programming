@@ -3,9 +3,11 @@
 
 int main() {
   char fmt[256];
-  scanf("%s", fmt);
+  fmt[0] = "c";
+  // scanf("%s", fmt);
   // printf("%s", format);
-  myprintf(*fmt);
+  // myprintf(*fmt);
+  test_printf("success");
 
   return 1;
 }

@@ -17,7 +17,7 @@ void myprintf(char *fmt) {
       }
     }else {
       // print a character as it is 
-      print_character(fmt);
+      // print_character(fmt);
     }
     fmt++;
   }
