@@ -1,4 +1,7 @@
-void myprintf(char *fmt) {
+void myprintf(char *fmt, ...) {
+  printf("Format =>  %s\n", fmt);
+  char *p = ((char*)&fmt) + 8;
+  printf("Second Argument => %s\n", p);
   while (*fmt) {
     if (*fmt == '%') {
       fmt++;
