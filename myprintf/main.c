@@ -2,11 +2,6 @@
 #include "myprintf.c"
 
 int main() {
-  char fmt[] = "First Argument";
-  // scanf("%s", fmt);
-  // printf("%s", format);
-  char string[] = "Second Argument";
-  myprintf("Argument: %s", string);
-
-  return 1;
+  myprintf("I am %s, my age is %d", "Yuta Totsuka", 21);
+  return 0;
 }
