@@ -1,12 +1,3 @@
-void print_char(char c) {
-  char s[2];
-
-  s[0] = c;
-  s[1] = '\0';
-
-  print_string(s)
-}
-
 void myprintf(char *fmt, ...) {
   
   int i, argc = 0;
@@ -31,6 +22,7 @@ void myprintf(char *fmt, ...) {
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
           print_int(i);
           break;
+          /*
         case 'x':
           // TODO: Process of %x: print as hexadecimal number
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
@@ -63,6 +55,7 @@ void myprintf(char *fmt, ...) {
           print_string(str);
           // printf("0x%s\n",str_ptr);
           break;
+          */
         case 's':
           // Process of %s: print string
           s = *((int*) ((char *)&fmt + argc * sizeof(void *)) );

@@ -25,7 +25,7 @@ _print_string:
   j     $ra
 
 
-_print_char_temp:
+_print_char:
   subu  $sp, $sp, 24
   sw    $ra, 20($sp)
 
