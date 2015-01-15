@@ -22,9 +22,9 @@
   lineskip=-0.5ex%
 }
 
-\title{システムプログラミング\\中間レポート}
+\title{システムプログラミング\\期末レポート}
 \author{\\学籍番号：09425566\\氏名：佐藤 佑太}
-\date{出題日：2014/11/20\\提出日：2014/11/27\\締切り日：2014/11/27\\}
+\date{出題日：2014/12/24\\提出日：2014/1/22\\締切り日：2014/1/22\\}
 
 \begin{document}
 
@@ -42,157 +42,79 @@
 
 このレポートでは，以下に与えられる５つの課題に関しての考察，またそのプログラムを作成する過程を示すものである．ただし，プログラムはMIPSアセンブリ言語で記述し，SPIMを用いて動作を確認する．
 
-また，課題２に関しては第6章において考察する．
-
 
 \begin{enumerate}
 
-\item 教科書，（以下教科書はコンピュータの構成と設計（パターソン＆ヘネシー）第四版を指すこととする）B.8節．「入力と出力」に示されている方法と，B.9節「システムコール」に示されている方法のそれぞれで，"Hello World"を表示せよ．両者の方式を比較し考察せよ．
+\item SPIMが提供するシステムコールをC言語から実行できるようにしたい。教科書，（以下教科書はコンピュータの構成と設計（パターソン＆ヘネシー）第四版を指すこととする）B.6節．「手続き呼び出し規約」に従って、各種手続きをアセンブラで記述せよ。ファイル名は、syscalls.sとすること。　
 
-
-\item アセンブリ言語中で使用する .data  .text および .align とは何か解説せよ．下記コード中の6行目の .data がない場合，どうなるかについて考察せよ．
+また、記述したsyscalls.sの関数をC言語から呼び出すことで、ハノイの塔(hanoi.cとする)を完成させよ。
 
 {\baselineskip 3mm
 \begin{verbatim}
- 1:         .text
- 2:         .align  2
- 3: _print_message:
- 4:         la      $a0, msg
- 5:         li      $v0, 4
- 6:         .data
- 7:         .align  2
- 8: msg:
- 9:         .asciiz "Hello!!\n"
-10:         .text
-11:         syscall
-12:         j       $ra
-13: main:
-14:         subu    $sp, $sp, 24
-15:         sw      $ra, 16($sp)
-16:         jal     _print_message
-17:         lw      $ra, 16($sp)
-18:         addu    $sp, $sp, 24
-19:         j       $ra
+void hanoi(int n, int start, int finish, int extra)
+{
+  if (n!=0) {
+    hanoi(n-1, start, extra, finish);
+    print_string("Move disk ");
+    print_int(n);
+    print_string(" from peg ");
+    print_int(start);
+    print_string(" to peg ");
+    print_int(finish);
+    print_string(".\n");
+    hanoi(n-1, extra, finish, start);
+  }
+}
+main()
+{
+  int n;
+  print_string("Enter number of disks> ");
+  n = read_int();
+  hanoi(n, 1, 2, 3);
+}
 \end{verbatim}
 }
 
-\item 教科書B.6節「手続き呼び出し規約」に従って，関数factを実装せよ．（以降の課題においては，この規約に全て従うこと）factをC言語で記述した場合は，以下のようになる．
+spim-gccによってhanoi.sができたら、hanoi.s, syscalls.sの順にSPIM上でロードして実行し、その結果を示せ。
+
+\item hanoi.sを例にspim-gccの引数保存に関するスタックの利用方法について、説明書。そのことは、規約上許されるスタックフレームの最小値24とどう関係しているか。このスタックフレームの最小値規約を守らないとどのような問題が生じるかについて解説せよ。
+
+
+\item 以下のプログラムreport2-1.cをコンパイルした結果をもとに、auto変数とstatic変数の違い、ポインタと配列の違いについてレポートせよ。
 
 {\baselineskip 3mm
 \begin{verbatim}
- 1: main()
- 2: {
- 3:   print_string("The factorial of 10 is ");
- 4:   print_int(fact(10));
- 5:   print_string("\n");
- 6: }
- 7: 
- 8: int fact(int n)
- 9: {
-10:   if (n < 1)
-11:     return 1;
-12:   else
-13:     return n * fact(n - 1);
-14: }
-\end{verbatim}
+int primes_stat[10];
+ 
+char * string_ptr = "ABCDEFG";
+char string_ary[] = "ABCDEFG";
+ 
+void print_var(char *name, int val)
+{
+  print_string(name);
+  print_string(" = ");
+  print_int(val);
+  print_string("\n");
 }
-
-\item 素数を最初から100番目まで求めて表示するMIPSアセンブリ言語プログラムを作成してテストせよ．その際，素数を求めるために下記の2つのルーチンを作成すること．
-
-\begin{center}
-\begin{tabular}{lclcl}\hline
-\centering
-関数名&概要\\ \hline
-prime(n)&nが素数なら1, そうでなければ0を返す\\ \hline
-main()&整数を順々に素数判定し，100個プリント\\ \hline
-\end{tabular}
-\end{center}
-
-C言語を用いた例．
-
-{\baselineskip 3mm
-\begin{verbatim}
- 1: int prime(int n)
- 2: {
- 3:   int i;
- 4:   for (i = 2; i < n; i++){
- 5:     if (n % i == 0)
- 6:       return 0;
- 7:   }
- 8:   return 1;
- 9: }
-10: 
-11: int main()
-12: {
-13:   int match = 0, n = 2;
-14:   while (match < 100){
-15:     if (prime(n) == 1){
-16:       print_int(n);
-17:       print_string(" ");
-18:       match++;
-19:     }
-20:     n++;
-21:   }
-22:   print_string("\n");
-23: }
-\end{verbatim}
+ 
+main()
+{
+  int primes_auto[10];
+ 
+  primes_stat[0] = 2;
+  primes_auto[0] = 3;
+ 
+  print_var("primes_stat[0]", primes_stat[0]);
+  print_var("primes_auto[0]", primes_auto[0]);
 }
-
-実行例：
-
-{\baselineskip 3mm
-\begin{verbatim}
-  2   3   5   7  11  13  17  19  23  29
- 31  37  41  43  47  53  59  61  67  71
- 73  79  83  89  97 101 103 107 109 113
-127 131 137 139 149 151 157 163 167 173
-179 181 191 193 197 199 211 223 227 229
-233 239 241 251 257 263 269 271 277 281
-283 293 307 311 313 317 331 337 347 349
-353 359 367 373 379 383 389 397 401 409
-419 421 431 433 439 443 449 457 461 463
-467 479 487 491 499 503 509 521 523 541
+ 
 \end{verbatim}
 }
 
 
-\item 素数を最初から100番目まで求めて表示するMIPSアセンブリ言語プログラムを作成してテストせよ．ただし，配列に実行結果を保存するようにmain部分を改造し，ユーザの入力によって任意の番目の配列要素を表示可能にせよ．
+\item printfなど、一部の関数は、任意の数の引数を取ることができる。これらの関数を可変引数関数と呼ぶ。MIPSのCコンパイラにおいて可変引数関数の実現方法について考察し、解説せよ。
 
-C言語を用いた例．
-
-{\baselineskip 3mm
-\begin{verbatim}
- 1: int primes[100];
- 2: int main()
- 3: {
- 4:   int match = 0, n = 2;
- 5:   while (match < 100){
- 6:     if (prime(n) == 1){
- 7:       primes[match++] = n;
- 8:     }
- 9:     n++;
-10:   }
-11:   for (;;){
-12:     print_string("> ");
-13:     print_int(primes[read_int() - 1]);
-14:     print_string("\n");
-15:   }
-16: }
-\end{verbatim}
-}
-
-
-実行例：
-
-{\baselineskip 3mm
-\begin{verbatim}
-> 15
-47
-> 100
-541
-\end{verbatim}
-}
-
+\item printfのサブセットを実装し、SPIM上でその動作を確認する応用プログラム（自由なでもプログラム）を作成せよ。
 
 \end{enumerate}
 
