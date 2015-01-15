@@ -25,6 +25,18 @@ _print_string:
   j     $ra
 
 
+_print_char:
+  subu  $sp, $sp, 24
+  sw    $ra, 20($sp)
+
+  li    $v0, 11  # 11: print_char
+  syscall
+
+  lw    $ra, 20($sp)
+  addu  $sp, $sp, 24
+  j     $ra
+
+
 _read_int:
   subu  $sp, $sp, 24
   sw    $ra, 20($sp)
