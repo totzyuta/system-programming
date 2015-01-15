@@ -1,7 +1,13 @@
+void print_char(char c) {
+  char s[2];
+
+  s[0] = c;
+  s[1] = '\0';
+
+  print_string(s)
+}
+
 void myprintf(char *fmt, ...) {
-  // printf("Format =>  %s\n", fmt);
-  // char *p = ((char*)&fmt) + 8;
-  // printf("Second Argument => %s\n", p);
   
   int i, argc = 0;
   char *s;
@@ -38,4 +44,9 @@ void myprintf(char *fmt, ...) {
     }
     fmt++;
   }
+}
+
+int main() {
+  myprintf("I am %s, my age is %d", "Yuta Totsuka", 21);
+  return 0;
 }
