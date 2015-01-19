@@ -160,16 +160,18 @@ Move disk 1 from peg 1 to peg 2.
 
 \subsection{課題5}
 
-課題5では，以下の２つの関数を作成する．処理の概要は以下の通りに定め，下記でそれぞれについて解説する
+課題5では，以下の２つの関数とひとつのアセンブリプログラムを作成する．処理の概要は以下の通りに定め，下記でそれぞれについて解説する
 
 \begin{itemize}
 \item[(1)]フォーマットに従い適切な出力をコンソールに表示する関数myprintf()
 \item[(2)]任意のフォーマットを引数にmyprintf()関数を呼び出すmain関数
+\item[(3)]適切な値をコンソールに出力する関数を定義したアセンブリプログラムsyscalls.s
 \end{itemize}
 
 
 (1)myprintf()関数では，与えられた引数に関して適切な形で変数の代入などを行いコンソール上に結果を出力する。
 (2)main関数では，myprintf() 関数を、任意の引数とともに呼び出す。
+(3)syscalls.sではmyprintf()関数内である変数の内容を表示する場合にそれぞれ適切な型でコンソールに出力する関数を複数定義するプログラム。
 
 
 
@@ -183,41 +185,7 @@ Move disk 1 from peg 1 to peg 2.
 
 \subsection{課題1}
 
-まず，添付したプログラムputc.sで"Hello World"がコンソール上に出力される仕組みについて説明する．
-
-端末装置は レシーバと トランスミッタの２つの独立したユニットで構成され、それぞれの役割は以下となる。
-
-\begin{itemize}
-\item[(1)]レシーバ：キーバードから入力された文字を読み取る
-\item[(2)]トランスミッタ：コンソールに文字を表示する。
-\end{itemize}
-
-プログラムを作成する際には，この２つを独立したものとして切り離して考えることが重要である．
-
-これはMIPSの「メモリマップ方式」を利用した表示の仕方である．「メモリマップ方式」とは各レジスタに特定のメモリロケーションが割り当てられていることで、レシーバ制御レジスタ (Receiver Control register)のアドレスはffff0000(16)で、読み出し専用。ビット0（１桁目）を「レディ」と呼び、1だとキーボードから文字が入力されたけどReciver Data registerからまだ読み出されてない、という意味になる。
-
-Reciever Data registerにはキーボードからの入力が格納され、このレジスタからデータが呼び出されるとレディビットは0に設定し直される。
-
-これと逆で、トランスミッタ制御レジスタとトランスミッタデータレジスタもそれぞれ反対に今度は出力の作業をするためのレジスタとして割り振られている。
-
-Transmitter Control registerはのアドレスはffff0008(16)であり，このレジスタも下位2ビットのみが用いられる．同様にビット0が「レディ」と呼ばれ，読み出し専用である．このビットが1であると，トランスミッタは出力用の新しい文字を受け取る用意ができているという意味である．このビットが0であると，トランスミッタはまだ前の文字を書き出し中である．ビット1は「割り込み許可」ビットであり，読み出しも書き出しも可能である．このビットが1に設定されると新しい文字の準備ができ，レディビットが1であれば端末はハードウェアレベル１の割り込みを要求する．
-
-このプログラム作成にあたり特に重要となるポイントは以下である．
-
-\begin{itemize}
-\item[1]アドレス0xffff0008はトランスミッタ制御に割り当てられている
-\item[2]アドレス0xffff000cはトランスミッタデータに割り当てられている
-\end{itemize}
-
-これらのことを理解しておけばどこのレジスタに書き込みを行った時にtランスみったがコンソール上に文字を表示してくれるのか把握することができる．
-
-4行目のmain部分では，各文字を引数と取り扱うレジスタである\$a0に格納している．それを一文字ずつputc関数に渡し，表示の作業を任せる．それを一文字ずつ繰り返し，"Hello World"という文字列を最終的にコンソールに表示している．5行目では，戻りアドレス\$raがputc関数内で上書きされてしまわないよう，\$sレジスタに退避している．
-
-34行目以降のputc部分では，35行目でアドレス0xffff0008のデータ，Transmitter Control registerのビット0「レディ」を\$t0にロードしている．
-
-36-38行目で\$t0の値を調べ，「レディ」が1であれば39行目でアドレス0xffff000cのレジスタ，つまりTransmitter Data registerにmainから受け取った文字のデータを格納する．Transmitter Data registerはコンソールに出力するための部分にデータが格納されたため，その文字をコンソール上に表示する．
-
-次に，OSのサービスを使ってコンソール上に文字列を表示する方法を説明する．
+まず，SPIMでコンソール上に出力を表示する方法を記述する。
 
 SPIMでオペレーティングシステム的なサービスを実行するためには，システムコール(syscall)という命令を使うことになっている．
 
@@ -230,140 +198,186 @@ syscallを使い，サービスを要求する手順は以下のようにまと�
 \item[4]4. syscallで実行
 \end{itemize}
 
-
 サービスを使うためには手順１で\$v0に使いたいサービスの対応するデータをintで渡さなければならない．これをシステムコールコードという．(参考文献1 P.781参照)
 
-次に，作成したプログラムの説明をする．
 
-1-3行目で"Hello World"という文字列を，strというラベルをつけて保存している．
+次に，作成したプログラムsyscalls.sの説明をする．
 
-5行目からのmain部分では，上記の手順に従いOSのサービスを要求している．Printのstringのシステムコールコードは4であり，これを\$v0に格納してsyscallを実行すればよい．また，引数は\$a0から\$3にロードする．6行目が手順１，7行目は手順2，8行目は手順3にあたる．
-
-
-\subsection{課題3}
-
-末尾に添付したプログラムfactorial.sについて説明する．
-
-まず，再帰的な構造を持つプログラムを作るにあたって、手続き呼び出し規約をしっかりと理解しなければいけない。そのために最初に手続き呼び出し規約に従って処理をする３つの局面をおさえておくことにする．
-
-参考文献2によると，
-
-\begin{quote}
-This convention comes into play at three pointes during a procedure call: immediately before the caller invokes the callee, just as the callee starts executing, and immediately before the callee returns to the caller.
-
-(参考文献2 Location 14781)
-\end{quote}
-
-とある．まとめると
-
-\begin{itemize}
-\item1. 呼び出し側が手続きを呼び出す直前
-\item2. 被呼び出し側がスタートした直後
-\item3. 被呼び出し側が呼び出し側に戻る直前
-\end{itemize}
-
-の３つで規約に従った処理を行わなければならない．
-
-まず，3行目のmainの部分で始めにこれらの規約に従った処理を行う．今回はmainが被呼び出し側になっていることに注意したい．被呼び出し側がスタックフレームを生成する過程で最初にすることは以下である．これは最初に言及した局面の2にあたる．
-
-\begin{quote}
-Before a called routine starts running, it must take the following steps to set up its stack frame:
-
-1. Allocate memory for the frame by subtracting the frame's size from the stack pointer.
-2. Save callee-saved registers in the frame. A callee must save the values in these registers (\$s0-\$s7, \$fp, and \$ra) before altering them, since the caller expects to fnd these registers unchanged after the call. Register \$fp is saved by every procedure that allocates a new stac frame. However, register \$ra only needs to be saved if the callee itself makes a call. The other callee-saved registers that are used also must be saved.
-3. Establish the frame pointer by adding the stack frame's size minus 4 to \$sp and storing the sum in register \$fp.
-(Location 14787)
-\end{quote}
-
-コメントのカッコ内の数字は上記1-3の処理にあたる．
-
-続いて10行目ではmainからfact関数を呼び出すため，今度はmainが呼び出し側となる．これは上記局面１にあたり，呼び出し側は，関数を呼び出す直前に手続き呼び出し規約に従ってスタックフレームを生成しなければならない．
-
-することは以下の３つである．
-
-\begin{quote}
-1. Pass arguments. By convention, the first four arguments are passed in registers \$a0-\$a3. Any remaining arguments are pushed on the stack and appear at the beginning of the called procedure's stack frame.
-2. Save caller-saved registers. The called procedure can use these registers(\$a0-\$a3 and \$t0-\$t9) without first saving their value. If the caller expects to use one of these registers after a call, it must save its value before the call.
-3. Execute a jal instruction (see Section 2.8 of Chapter 2), which jumps to the callee's first instruciton and saves the return address in register \$ra.  
-
-(参考文献２)
-\end{quote}
-
-9行目で階乗を求める10を\$a0に入れる。\$a0は引数として用いるレジスタである．fact関数で使う値を渡していて，手順1にあたる．
-
-ここでは呼び出し側で，被呼び出し側で使う値（\$a0-\$a3と\$t0-\$t9)を事前に保存（退避）しておく．これは \$t系のレジスタが被呼び出し側で使われて，変更されたとしても呼び出し側に戻ってきたときにそれを復元してもとの値として使えるようにするためだ．要するにMIPSアセンブリでは「\$aと\$t系レジスタは呼び出し間では保存されない」という規約を自分で厳守できるよう設定しなければならない．
-
-そして10行目でjal命令でfact関数を呼び出している．これは上記手順3にあたる．
-
-fact関数から帰ってきたあと，12-14行目でmain関数では適切なデータをレジスタに格納した後にprintf関数を呼び，コンソール上に結果を表示している．
-
-最後に，手続き呼び出し規約に従って処理を行う局面３があるので，それを実行している．mainが呼び出し側に戻る直前である．
-
-局面３で行う処理の概要は以下である．
+まずprint\_int関数から解説を行う。
 
 
-\begin{quote}
-Finally, after pointing the factorial, main returns. But first, it must restore the registers it saved and pop its stack frame.
+関数が呼ばれた直後に、被呼び出し側でスタックフレームの領域を確保し、\$spを退避する。ここでは24バイト分確保している。
 
-(参考文献2)
-\end{quote}
+% TODO: Resource of this information
+また、C言語から関数を呼び出すときには\_funcname:のように最初にアンダーバーをつけること。これはコンパイルに依存し、今回はgccを用いている。　
 
-そして具体的には以下の4つの処理を行う．
+{\baselineskip 3mm
+\begin{verbatim}
 
-\begin{quote}
-1. If the calle is a function that returns a value, place the returned value in register \$v0.
-2. Restore all callee-saved registers that were saved upon procedure entry.
-3. Pop the stack frame by adding the frame size to \$sp
-4. Return by jumping to the address in register \$ra
-(Location 14804)
+\_print\_int:
+  subu  $sp, $sp, 24
+  sw    $ra, 20($sp)
+ 
+\end{verbatim}
+}
 
-(参考文献2)
-\end{quote}
+次の2行で、各サービスに対応するシステムコールコードを\$v0に格納してsyscallを実行している。ここでは、引数は\$a0に格納されて渡されることを仕様の前提としており、それを利用している。
+
+{\baselineskip 3mm
+\begin{verbatim}
+
+li    $v0, 1  # 1: print_int
+syscall
+ 
+\end{verbatim}
+}
+
+次の3行で、戻りアドレスを復元し、スタックフレームを破棄、復元した戻りアドレスに従ってもとの場所にジャンプ、という処理を行っている。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+lw    $ra, 20($sp)
+addu  $sp, $sp, 24
+j     $ra
 
 
-mainは返り値がないので1の処理は行っていない．
+  \end{verbatim}
+}
 
-16行目でlwでスタックに格納（退避）しておいた戻りアドレス\$raとフレームポインタ\$fpを元あるべき場所に戻す。(手順2)
-
-17行目でスタックフレームを全て元どおり（サイズ０）にする。\$spに32足したら前確保した分が詰まり，元どおりになる。(手順3)
-
-18行目でjrでmainの値を返してプログラムは終了となる。(手順4)
+他の4つの関数print\_int, read\_string, read\_intについても同様の処理を行う。各関数の定義で異なっているのはシステムコールコードの値のみである。
 
 
 
 \subsection{課題5}
 
-% 課題4で作成した100番目までの素数を求めるプログラムを応用して、ユーザから受け取った入力nに対して、n番目の素数を表示するプログラムを作成する。
+末尾に添付したプログラムmyprintf.cについて解説を行う。
 
-% 課題4のプログラムで求めた素数はコンソールに表示する代わりに配列に保持しておき、入力nに対応する配列の中身を表示する方法とする。
+main()関数では、任意のフォーマットと引数とともにmyprintf()関数を呼び出す処理を行う
 
-求めた素数を配列に順番になるよう保持しておき、その後入力nに対応する配列の中身を表示する方法をとった。
+{\baselineskip 3mm
+  \begin{verbatim}
 
-それにあたり、まずアセンブリ言語に置ける配列の実現方法について考察してみる。
+int main() {
+  myprintf("I am %s, my age is %d", "Yuta Totsuka", 21);
+  return 0;
+}
 
-まず、以下の疑似命令で400バイト分の領域を確保する。\\
+\end{verbatim}
+}
+
+プログラムが実行されると、まずこのmain関数が呼ばれ、myprintf()関数を呼び出す。このサンプルでは可変引数として
+
+\begin{itemize}
+\item[1]"I am %s, my age is %d": string
+\item[2]"Yuta Totsuka": string
+\item[3]21: integer
+\end{itemize}
+
+の3つの引数を与えることとする。
+
+このmyprintf()関数が無事実行されたらmain()関数は0を返してこのプログラムは終了する。
 
 
+次に、myprintf()関数部について説明する。
 
-\begin{lstlisting}
-array:
-  .space 400
-\end{lstlisting}
+まず、この関数では可変引数を受け取る必要がある。1つめはfmtをchar型のポインタで、2つ目以降は...の形で受け取っている。
+
+\begin{verbatim}
+void myprintf(char *fmt, ...) {
+\end{verbatim}
+
+以下で必要な引数を宣言している。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+int i, argc = 0;
+char *s;
+
+\end{verbatim}
+}
+
+一番外側のループであるwhileでは、fmt++で*fmtのポインタが指す場所をひとつずつ繰り上げていき、char *fmtの中身がなくなるまで出力する処理を繰り返す、という仕組みである。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+while (*fmt) {
+
+// 出力処理
+
+    fmt++;
+}
+
+\end{verbatim}
+}
+
+続いて上記出力処理部分では*fmtが指すデータが'\%'だった場合とそうでない場合とで出力の処理を分岐する。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+// 出力処理
+ if (*fmt == '%') {
+      // 各型に対応する変数の出力処理
+    }else {
+      // 文字をそのまま出力
+    }
+    fmt++;
+
+\end{verbatim}
+}
+
+'\%'だった場合はその'\%'自体は出力せずにfmtを繰り上げ次のアドレスを指すようにし、そこに入っているアルファベットに従って、switchで各型に応じた出力処理に振り分ける、という処理を行う。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+ // 各型に対応する変数の出力処理
+      fmt++;
+      argc++;
+      switch (*fmt) {
+        case '%':
+          // Process of %%
+          break;
+        case 'c':
+          // Process of %c
+          break;
+        case 'd':
+          // Process of %d
+          i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
+          print_int(i);
+          break;
+        case 'u':
+          // Process of %u
+          break;
+        case 's':
+          // Process of %s
+          s = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
+          print_string(s);
+          break;
+        break;
+      }
+
+\end{verbatim}
+}
+
+'\%'以外の場合はその文字をそのまま出力する。
+
+{\baselineskip 3mm
+  \begin{verbatim}
+
+      // 文字をそのまま出力 
+      print_char(*fmt);
+
+\end{verbatim}
+}
 
 
-MIPSでは32bitsコンピュータとして再現されているので、４倍と単位でデータを整列化する。すなわち配列１つにつき4バイトの容量が必要となるため、これは100個分のintデータを格納できる。
+また、stdio.hライブラリで実装されているprintf()関数を使わずにmyprintf()関数を実現するために、コンソールに文字を出力するための関数をsyscalls.sで定義している。各関数で行っている処理の詳細は、section3.1を参照。 
 
-また、配列を繰り上げていく部分にさらに処理を速くする工夫を行った。添付プログラム66行目から67行目がその部分であり、ソースは以下のようになっている。\\
 
-\begin{lstlisting}
-li $t4, 4 # For array increasing
-addu $a1, $a1, $t4 # $a1 = $a1 + 4
-sw $s3, 0($a1) # Put prime number into array
-\end{lstlisting}
-
-レジスタ\$a1には配列の先頭を示すアドレスが格納され、それに直接4を足すことで、次の配列の先頭を0(\$a1)で指定することが出来る。この方法であればシンプルに定数4の足し算をアドレス(int)に対して行うだけであるので、処理の高速化を図ることが出来る。
-
-注意点として、la命令で、.spaceで確保した領域をみだらに初期化し用としてはいけない点だ。細かな挙動まで把握することは出来なかったが、.spaceでarrayラベルを指定したとき、必ず確保したデータの最初のアドレスをロードするというわけではないようだ。
 
 
 %
@@ -376,87 +390,53 @@ sw $s3, 0($a1) # Put prime number into array
 
 \subsection{課題1}
 
-プログラムを実行すると，Hello Worldという文字列をコンソール上に以下のように表示する．
+hanoi.cをクロスコンパイラを用いてMIPSプラットフォーム向けのアセンブリプログラムhanoi.sを作成する。　
+
+その後spimを用いてhanoi.s、syscalls.sという順番でプログラムをロードして実行すると、以下のように表示されハノイの塔の高さをきかれる。　
 
 {\baselineskip 3mm
 \begin{verbatim}
-Hello World
+Enter number of disks > 
+\end{verbatim}
+}
+
+ここで3を入力すると、ハノイの塔の手順が以下のようにコンソールに出力される。　
+
+{\baselineskip 3mm
+\begin{verbatim}
+
+Enter number of disks> 3
+Move disk 1 from peg 1 to peg 2.
+Move disk 2 from peg 1 to peg 3.
+Move disk 1 from peg 2 to peg 3.
+Move disk 3 from peg 1 to peg 2.
+Move disk 1 from peg 3 to peg 1.
+Move disk 2 from peg 3 to peg 2.
+Move disk 1 from peg 1 to peg 2.
+ 
 \end{verbatim}
 }
 
 
-\subsection{課題3}
 
-プログラムを実行すると，10の階乗の値をコンソール上に以下のように表示する．
-
-{\baselineskip 3mm
-\begin{verbatim}
-The factorial 10 is 3628800
-\end{verbatim}
-}
-
-
-\subsection{課題4}
-
-プログラムを実行すると，以下のように1〜100番目までの素数をコンソール上に表示する．  
-
-{\baselineskip 3mm
-\begin{verbatim}
-2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 
-83 89 97 101 103 107 109 113 127 131 137 139 149 151 157 163 
-167 173 179 181 191 193 197 199 211 223 227 229 233 239 241 
-251 257 263 269 271 277 281 283 293 307 311 313 317 331 337 
-347 349 353 359 367 373 379 383 389 397 401 409 419 421 431 
-433 439 443 449 457 461 463 467 479 487 491 499 503 509 521 
-523 541 
-\end{verbatim}
-}
 
 
 \subsection{課題5}
 
-プログラムを起動すると，まず以下のような簡単な使い方とインターフェースが表示される．
+プログラムを実行すると，10の階乗の値をコンソール上に以下のように表示する．
+
+クロスコンパイラを用いてmyprintf.cをmyprintf.sにコンパイラする。　
+
+myprintf.s、syscalls.sの順にプログラムをspimでロードし実行すると以下のような出力を得ることができる。
 
 {\baselineskip 3mm
 \begin{verbatim}
-Prime Number Searcher
-
-Which number is the prime number you want to know?
-- Type 1-100
-- To quit, type 0
-
-
-> 
-\end{verbatim}
-}
-
-ユーザは'＞'のあとに，知りたいn番目の素数に対するnを入力する．実際にいくつかの数値を入力してみた際の出力は以下となる．
-
-{\baselineskip 3mm
-\begin{verbatim}
-> 2
-3
-> 100
-541
-> 
-\end{verbatim}
-}
-
-また，このプログラムではユーザが使用することを想定し，0でプログラムを正常終了し，100以上の数値を入力するとエラー文を表示するようにした．
-
-{\baselineskip 3mm
-\begin{verbatim}
-> 102
-
-Please type correct number
-
-> 0
-
-Good bye :)
+I am Yuta Totsuka, my age is 21
 \end{verbatim}
 }
 
 
+% HERE
 
 
 
@@ -537,12 +517,9 @@ prime(n)関数では，今回はチェックしたい値に対して全ての数
 
 \subsection{課題5}
 
-今回の課題プログラムの中で唯一ユーザからの入力に対して動作を行うプログラムであったため，ユーザの想定を考えインストラクションとエラー処理，プログラムの正常終了を行うコマンドを実装した．
+s = *((int*) ((char *)&fmt + argc * sizeof(void *)) ); ここの部分どうなってんねん！
 
-エラー処理では，100より大きいあたいを入力すると「Please type correct number」というようなエラー文が表示され，次の処理に移るようプログラムを作成した．
-
-また，0でプログラムを正常終了させれるようにした．
-
+なぜCプログラム中でprint_charを作ったのか？アセンブリのsyscallのサービスとして提供されていなかっただろうか。（番号11）
 
 
 
