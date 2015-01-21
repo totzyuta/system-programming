@@ -269,7 +269,7 @@ int main() {
 プログラムが実行されると、まずこのmain関数が呼ばれ、myprintf()関数を呼び出す。このサンプルでは可変引数として
 
 \begin{itemize}
-\item[1]"I am %s, my age is %d": string
+\item[1]"I am \%s, my age is \%d": string
 \item[2]"Yuta Totsuka": string
 \item[3]21: integer
 \end{itemize}
@@ -450,76 +450,13 @@ I am Yuta Totsuka, my age is 21
 
 \subsection{課題1}
 
-プログラムを作成している過程で，以下のエラーが出た．
-
-\begin{quote}
-Instruction references undefined symbol at 0x00400014
-\end{quote}
-
-ステップ実行で確認してみたところ，jal命令においてmainがないというメッセージが出ていたのでmainを追加したところ，さらに次のようなエラーが出力された．
-
-\begin{quote}
-Attempt to execute non-instruction at 0x0040003c
-\end{quote}
-
-抜け出す処理が必要だと推定し，jr命令でmainから戻る設定を行うようにプログラムを書き直すと，正常に動作するようになった．
-
-以上のことから，main部分はプログラム開始時に，プログラムの内容に関わらず一番最初に呼ばれる処理が実行されていることがわかる．またこのことから，main部分に関しても呼び出し側に戻る必要があることもわかる．
-
-また，jal命令には，実行されると同時に\$raに自動で戻りアドレスを格納する機能があるということも推測できる．
-
-MIPSアセンブリ言語において，戻りアドレスを保持することは非常に重要なことであり，これをプログラマーが任意で値を書き換えないように注意しなければならないだろう．
-
-
-
-
-\subsection{課題3}
-
-\subsubsection{疑問点1}
-
-なぜスタックフレームを生成するには\$spから値を「引く」のか？
-
-\begin{quote}
-スタックポインタからフレームのサイズを引いて、フレーム用にメモリを割り当てる 
-
-(参考文献1 p. 764)
-\end{quote}
-
-スタックフレームは低位から高位のメモリアドレスにフレームを生成することを考えればわかりやすい．\$fpは最初初期値が\$spと同じように設定されていて、\$spから引いた数の分だけ\$spと\$fpの差は開き、そこがフーレムとして生成されることを考えればよい．
-
-これより，\$spから欲しいバイト分だけ値を引けば，その分下に伸びるイメージで確保領域が広くなっている．そして，\$fpはスタックからのデータ取得を簡易化するためのものなので，この原理を知り，4バイトずつ計算することができれば\$spのみでスタックを利用することもできる．
-
-\subsubsection{疑問点2}
-
-なぜスタックフレームの大きさは24バイト以上で，8バイト単位なのか？  
-
-\begin{quote}
-この最低限のフレームに４つの引数レジスタ (\$a0 - \$a3) と戻りアドレス\$raを、倍長語の境界に整列化して持たせることができる。mainでは\$fpも退避する必要があるので、スタックフレームを2語分大きくしなければならない。（スタックフレームは倍長語の境界に整列化されることに留意）(参考文献１P.766)
-
-The frame is larger than required for these two register because the calling convention requires the minimum size of a stack frame to be 24 bytes. This minimum frame can hold four argument registers (\$a0-\$a3) and the return address \$ra, padded to a double-word boundary (24 bytes). Since main also needs to save \$fp, its stack frame must be two words larger (remember: the stack pointer is kept doubleword aligned).（参考文献２）
-\end{quote}
-
-\$raと\$fa，またコンパイルする際に最低限ひつようであるから，スタックフレームは最低限24バイト必要である．
-
-よって，さらにデータを確保したい場合は，32バイト，40バイトとスタックフレームのサイズを大きくする必要がある．
-
-これはMIPSが32ビットコンピュータとして作動していることに由来している．
-
-整列化，つまり倍長語の8バイトずつデータを区切るのは32ビットコンピュータがデータの区切りを明確に理解しながらデータを読み込むことでより効率的に処理できるからである．
-
-
-
-
-\subsection{課題4}
-
-prime(n)関数では，今回はチェックしたい値に対して全ての数で割り，その余りを算出することで素数であるかどうかを判定したが，その部分のアルゴリズムはもっと簡略に書けるだろう．今回は時間を確保できなかったので，次の課題として挑戦したい．
-
 
 \subsection{課題5}
 
-s = *((int*) ((char *)&fmt + argc * sizeof(void *)) ); ここの部分どうなってんねん！
 
-なぜCプログラム中でprint_charを作ったのか？アセンブリのsyscallのサービスとして提供されていなかっただろうか。（番号11）
+s = *((int*) ((char *)\&fmt + argc * sizeof(void *)) ); ここの部分どうなってんねん！
+
+なぜCプログラム中でprint\_charを作ったのか？アセンブリのsyscallのサービスとして提供されていなかっただろうか。（番号11）
 
 
 
@@ -535,66 +472,216 @@ s = *((int*) ((char *)&fmt + argc * sizeof(void *)) ); ここの部分どうな�
 また，結果に対してわいたいくつかの疑問点とそれについての考察を記述する．
 
 
+\subsection{課題1}
 \subsection{課題2}
-
-ピリオドで始まるシンボル名はアセンブラ指令と呼ばれ，これはプログラムを翻訳する方法をアセンブラに指示するものである．つまり，CPUが直接実行するわけではないが，プログラム実行に不可欠なデータの用意や，メモリ中におけるプログラムの配置をコントロールするこことがアセンブラ指令の目的である．
-
-それぞれに意味があり，簡略にまとめると以下のようになる．
-
-\begin{center}
-\begin{tabular}{lclcl}\hline
-シンボル&意味\\ \hline \hline
-.text&後続行に命令が含まれることを示す\\ \hline
-.data&後続の行にデータが含まれることを示す\\ \hline
-.align n&後続行中の項目を2のn乗バイトの境界に合わせて整列化しなければならい\\ \hline
-.global main&mainをグローバルな記号として宣言\\ \hline
-.asciiz&メモリ中に格納する文字列の末尾にnullを付加することを示す\\ \hline
-\end{tabular}
-\end{center}
-
-特に，.dataと.text，また.align nについて詳しく考察してみることにする．
-
-まず，.dataと.textは，メモリのどこにデータやテキストを格納するかを制御するためのものである．
-
-テキストデータはASCII tableに従った数字として最終的に保存されるため，テキストとしてのデータなのかそれ以外のデータなのか，コンピュータは判断することができない．そこで，アセンブラ指令を用いてもともとテキストとデータを保存する場所を区別するために.dataと.textを使い分ける必要があるのだろう．
-
-そのため，.dataがない場合，コンピュータはtext型のデータと勘違いしてしまい適切なデーtあセグメントにデータを配置できず，予期せぬ出力を行う可能性が有ると考えられる．
-
-次に，.align nというアセンブラ指令について考察してみる．
-
-MIPSは32ビットアーキテクチャである．それはつまり，4バイト分ずつデータを読み込んでいく，ということだ．このため，CPUが効率的に動くためには，4バイト分ずつきちんとデータが区切れている必要がある．
-
-データのサイズに合わせて，手動で間を埋めて整列させることもできるが，データの量が多くなると厳しい．そこで，それらの整列化を自動でやってくれるのが.align nというアセンブラ指令である．
-
-
 \subsection{課題3}
 
-手続き呼び出し規約におけるスタックフレームの生成に関して，
+report2-1.cをMIPSプラットフォーム向けにコンパイルしたプログラムreport2-1.sを読むことで、C言語におけるauto変数とstatic変数を、アセンブリでどのように実現しているのかを理解する。
 
-\begin{quote}
-Register $fp is saved by every procedure that allocates a new stac frame. However, register $ra only needs to be saved if the callee itself makes a call.
+mips-gccでコンパイルしたreport2-1.sは以下のようになった。
 
-(参考文献2)
-\end{quote}
-
-という記述に気をつけたい．\$fpは被呼び出し側がさらに呼び出し側にならないケースでも必ず退避させなければならない．
-
-また，7行目でaddiu命令で\$fpに格納しているのが\$sp+28であるという部分．ここでは32バイト分のスタックフレームを生成しているが，フレームポインタの指し示す部分はそのマイナス４バイトである28となることでスタックの先頭，一つ目を\$fpが指すようにフレームポインタを設定できる．  
+\begin{verbatim}
 
 
-疑問点1: 関数が返せる引数はひとつまでなのか
+	.file	1 "report2-1.c"
+ 
+ # -G value = 0, Cpu = r2000, ISA = 1
+ # GNU C version 2.96-mips3264-000710 (mipsel-linux) compiled by GNU C version 2.96 20000731 (Red Hat Linux 7.2 2.96-112.7.2).
+ # [AL 1.1, MM 40] BSD Mips
+ # options passed:  -mno-abicalls -mrnames -mmips-as
+ # -mno-check-zero-division -mcpu=r2000 -O0 -fleading-underscore
+ # -finhibit-size-directive -fverbose-asm
+ # options enabled:  -fpeephole -fkeep-static-consts -fpcc-struct-return
+ # -fsched-interblock -fsched-spec -fnew-exceptions -fcommon
+ # -finhibit-size-directive -fverbose-asm -fgnu-linker -flive-range-gdb
+ # -fargument-alias -fleading-underscore -fdelay-postincrement -fident
+ # -fmath-errno -msplit-addresses -mrnames -mno-check-zero-division
+ # -mdebugf -mdebugi -mno-div-checks -mcpu=r2000
+ 
+ 
+	.rdata
+	.align	0
+	.align	2
+$LC0:
+	.asciiz	"ABCDEFG"
+	.data
+	.align	0
+	.align	2
+_string_ptr:
+	.word	$LC0
+	.align	2
+_string_ary:
+	.asciiz	"ABCDEFG"
+	.rdata
+	.align	0
+	.align	2
+$LC1:
+	.asciiz	" = "
+	.align	2
+$LC2:
+	.asciiz	"\n"
+	.text
+	.align	2
+	.set	nomips16
+_print_var:
+	subu	$sp,$sp,24
+	sw	$ra,20($sp)
+	sw	$fp,16($sp)
+	move	$fp,$sp
+	sw	$a0,24($fp)
+	sw	$a1,28($fp)
+	lw	$a0,24($fp)
+	jal	_print_string
+	la	$a0,$LC1
+	jal	_print_string
+	lw	$a0,28($fp)
+	jal	_print_int
+	la	$a0,$LC2
+	jal	_print_string
+	move	$sp,$fp
+	lw	$ra,20($sp)
+	lw	$fp,16($sp)
+	addu	$sp,$sp,24
+	j	$ra
+	.rdata
+	.align	0
+	.align	2
+$LC3:
+	.asciiz	"primes_stat[0]"
+	.align	2
+$LC4:
+	.asciiz	"primes_auto[0]"
+	.text
+	.align	2
+	.set	nomips16
+main:
+	subu	$sp,$sp,64
+	sw	$ra,60($sp)
+	sw	$fp,56($sp)
+	move	$fp,$sp
+	li	$v0,2			# 0x2
+	sw	$v0,_primes_stat
+	li	$v0,3			# 0x3
+	sw	$v0,16($fp)
+	la	$a0,$LC3
+	lw	$a1,_primes_stat
+	jal	_print_var
+	la	$a0,$LC4
+	lw	$a1,16($fp)
+	jal	_print_var
+	move	$sp,$fp
+	lw	$ra,60($sp)
+	lw	$fp,56($sp)
+	addu	$sp,$sp,64
+	j	$ra
+ 
+	.comm	_primes_stat,40
+ 
 
-スタックを使えば複数の値を擬似的に返すことはできるかもしれないが，規約には反しているかもしれない．
+\end{verbatim}
 
-疑問点2:  なぜ\$fpは必ず退避させなければならないのか
+まずstaticについての説明を行う。
 
-呼び出し側がさらに呼び出し側になる場合\$raが退避させる必要はあるのは納得できるが，それ以外の時は退避する必要がないように思える．
+report2-1.sプログラムの最後に以下のような記述がある。
 
-これに関しては「後半で\$fpを存分に使うのでそこで学べる」とうい回答をいただいた．
+\begin{verbatim}
+ .comm   _primes_stat,40
+\end{verbatim}
 
-疑問点3: mainからfactを呼ぶとき\$a0は退避しないでよいのか
+これは以下と同じ命令である。
 
-\$a0-\$a3は退避する必要がないのか．
+\begin{verbatim}
+ .data
+    .align 2
+    _primes_start:
+        .space  40
+\end{verbatim}
+
+ここでは、データセグメント内に、\_primes\_startというラベルをつけて、データを40バイト確保している。
+
+つまりこのときに長さ10の配列のために確保された40バイトは、この配列を使うためだけに確保されている。よってこれは、プログラムの開始から終了時まで、値を保持しつづけるという性質を持つことになる。
+
+だがあくまでこれは規約上であり絶対に上書きされないということはない。関数などが再帰的に呼び出された場合は、その領域を上書きすることがある。
+
+その領域しか使わないからこそ、再帰的な処理の時などのときの処理は煩雑になりそうである。
+
+
+次にmain部分にフォーカスして読んでいく。
+
+まず64バイト分のスタックフレームを生成し、戻りアドレス\$raとフレームポインタ\$fpを更新。
+
+\begin{verbatim}
+main:
+    subu    $sp,$sp,64
+    sw  $ra,60($sp)
+    sw  $fp,56($sp)
+\end{verbatim}
+
+その後フレームポインタを\$spと同じアドレスを指すようにする。
+
+上で一度\$fpを更新してもう一度ここで更新する意味が理解できないが、それは後の疑問点で考察する。
+
+\begin{verbatim}
+ move    $fp,$sp
+\end{verbatim}
+
+次に各配列の先頭の値を準備する。
+
+まずはstatic変数側の配列の先頭の値を準備する。
+
+ここでは、\$v0の値を\_primes\_startラベルで確保されてるデータセグメントの最初に格納していることに注意。
+
+
+\begin{verbatim}
+ li  $v0,2           # 0x2
+    sw  $v0,_primes_stat
+\end{verbatim}
+
+次はauto変数に対応する部分についてみていく。16(\$fp)ということで、スタックフレームのデータ4個分のところに値を格納している。
+
+なぜ16なのかは、疑問点にて考察する。
+
+\begin{verbatim}
+ li  $v0,3           # 0x3
+    sw  $v0,16($fp)
+\end{verbatim}
+
+出力する予定の文字列を読み込んで、さっき格納したstaticの配列の一番最初の値を持ってきて、出力するためのルーチンを呼ぶ。
+
+\begin{verbatim}
+ la  $a0,$LC3
+    lw  $a1,_primes_stat
+    jal _print_var
+\end{verbatim}
+
+今度はautoでも同じことをする。
+
+\begin{verbatim}
+ la  $a0,$LC4
+    lw  $a1,16($fp)
+    jal _print_var
+\end{verbatim}
+
+スタックを解放してmain部終了。
+
+\begin{verbatim}
+ move    $sp,$fp
+    lw  $ra,60($sp)
+    lw  $fp,56($sp)
+    addu    $sp,$sp,64
+    j   $ra
+\end{verbatim}
+
+ここからわかるように、auto変数では、static変数と違って スタックで配列を管理していることが分かる。
+
+つまり、この関数が終了すれば\$spに確保したバイト数が足され、スタックが解放され、その結果保持していたauto変数の配列も消えてしまう。
+
+ここから、アセンブリ言語では、C言語のstatic変数をメモリに別の領域として確保して扱い、auto変数をプログラム中の関数のスタックに格納することによって、両者の性質を実現していることが分かる。
+
+
+\subsection{課題4}
+\subsection{課題5}
+
 
 
 \newpage
@@ -609,21 +696,14 @@ Register $fp is saved by every procedure that allocates a new stac frame. Howeve
 
 \subsection{課題1}
 
-\lstinputlisting[caption=putc.s, label=putc.s]{./source/putc.s}
+% \lstinputlisting[caption=putc.s, label=putc.s]{./source/putc.s}
 
-\lstinputlisting[caption=putc2.s, label=putc2.s]{./source/putc2.s}
+% \lstinputlisting[caption=putc2.s, label=putc2.s]{./source/putc2.s}
 
-\subsection{課題3}
-
-\lstinputlisting[caption=factorial.s, label=factorial.s]{./source/factorial.s}
-
-\subsection{課題4}
-
-\lstinputlisting[caption=prime.s, label=prime.s]{./source/prime.s}
 
 \subsection{課題5}
 
-\lstinputlisting[caption=prime2.s, label=prime2.s]{./source/prime2.s}
+%  \lstinputlisting[caption=prime2.s, label=prime2.s]{./source/prime2.s}
 
 
 %
