@@ -214,7 +214,7 @@ syscallを使い，サービスを要求する手順は以下のようにまと�
 {\baselineskip 3mm
 \begin{verbatim}
 
-\_print\_int:
+_print_int:
   subu  $sp, $sp, 24
   sw    $ra, 20($sp)
  
@@ -436,8 +436,6 @@ I am Yuta Totsuka, my age is 21
 }
 
 
-% HERE
-
 
 
 %
@@ -450,21 +448,33 @@ I am Yuta Totsuka, my age is 21
 
 \subsection{課題1}
 
+関数名に\_funcname:のように最初にアンダーバーをつける理由について考察したい。
+
+C言語プログラムからsyscalls.sにおけるpinrt\_int()などの関数を呼び出す場合には、関数名の最初にアンダーバーをつけることが決まりになっている。
+
+C言語のプログラムをアセンブリのプログラムに変換した場合結局は.sファルを読み込むことになるので、外部プログラムを呼び出すときにはアンダーバーをつけるのがMIPSアセンブリの決まりであるのかもしれない。
+
+これはMIPSが複数のプログラムを結びつけるときに内部にある関数と外部にある関数を判断するためにつけられるものであると考察した。
+
 
 \subsection{課題5}
 
+標準のC言語ライブラリにおけるprintf()関数でも実装されている機能としてフォーマット指定子として"\%\%"が与えられた時に出力として"\%"を表示する機能を実装した。実装部分はセクション7のプログラムリストmyprintf.cにおける以下の部分である。
+
+\begin{verbatim}
+        case '%':
+          // Process of %%: print '%'
+          print_char(*fmt);
+          break;
+\end{verbatim}
+
+ここでは、syscalls.sにおいて定義しているprint\_char()関数を用い、*fmtに格納されている"\%"を出力させている。
 
 \subsubsection{疑問点1}
 
-以下の部分の構造について．
+なぜ解説プログラムでは、Cソース中でprint\_char()関数を定義しているのか．MIPSアセンブリのsyscallのサービスとして提供されているものを使用した時との違いは何か。
 
-\begin{verbatim}
-s = *((int*) ((char *)\&fmt + argc * sizeof(void *)) ); 
-\end{verbatim}
 
-\subsubsection{疑問点2}
-
-なぜCプログラム中でprint\_charを定義しているのか．MIPSアセンブリのsyscallのサービスとして提供されているものを使用した時との違いは何か。
 
 
 
@@ -480,115 +490,54 @@ s = *((int*) ((char *)\&fmt + argc * sizeof(void *)) );
 また，結果に対してわいたいくつかの疑問点とそれについての考察を記述する．
 
 
-\subsection{課題1}
+% \subsection{課題1}
+
 \subsection{課題2}
-\subsection{課題3}
 
-report2-1.cをMIPSプラットフォーム向けにコンパイルしたプログラムreport2-1.sを読むことで，C言語におけるauto変数とstatic変数を，アセンブリでどのように実現しているのかを理解する．
+% hanoi.sを例に、spim-gccの引数保存に関するスタックの利用方法について、説明せよ。そのことは、規約上許されるスタックフレームの最小値24とどう関係しているか。このスタックフレームの最小値規約を守らないとどのような問題が生じるかについて解説せよ。
 
-mips-gccでコンパイルしたreport2-1.sは以下のようになった．
+hanoi.sにおいて、hanoi関数の冒頭の部分について解説する。
 
-\begin{verbatim}
+まず以下で24バイト分スタックフレームを生成し、戻りアドレス、フレームポインタを格納し、古いフレームポインタを退避させている。
 
-
-	.file	1 "report2-1.c"
- 
- # -G value = 0, Cpu = r2000, ISA = 1
- # GNU C version 2.96-mips3264-000710 (mipsel-linux) compiled by GNU C version 2.96 20000731 (Red Hat Linux 7.2 2.96-112.7.2).
- # [AL 1.1, MM 40] BSD Mips
- # options passed:  -mno-abicalls -mrnames -mmips-as
- # -mno-check-zero-division -mcpu=r2000 -O0 -fleading-underscore
- # -finhibit-size-directive -fverbose-asm
- # options enabled:  -fpeephole -fkeep-static-consts -fpcc-struct-return
- # -fsched-interblock -fsched-spec -fnew-exceptions -fcommon
- # -finhibit-size-directive -fverbose-asm -fgnu-linker -flive-range-gdb
- # -fargument-alias -fleading-underscore -fdelay-postincrement -fident
- # -fmath-errno -msplit-addresses -mrnames -mno-check-zero-division
- # -mdebugf -mdebugi -mno-div-checks -mcpu=r2000
- 
- 
-	.rdata
-	.align	0
-	.align	2
-$LC0:
-	.asciiz	"ABCDEFG"
-	.data
-	.align	0
-	.align	2
-_string_ptr:
-	.word	$LC0
-	.align	2
-_string_ary:
-	.asciiz	"ABCDEFG"
-	.rdata
-	.align	0
-	.align	2
-$LC1:
-	.asciiz	" = "
-	.align	2
-$LC2:
-	.asciiz	"\n"
-	.text
-	.align	2
-	.set	nomips16
-_print_var:
+\begin{verbatim} 
+_hanoi:
 	subu	$sp,$sp,24
 	sw	$ra,20($sp)
 	sw	$fp,16($sp)
 	move	$fp,$sp
-	sw	$a0,24($fp)
-	sw	$a1,28($fp)
-	lw	$a0,24($fp)
-	jal	_print_string
-	la	$a0,$LC1
-	jal	_print_string
-	lw	$a0,28($fp)
-	jal	_print_int
-	la	$a0,$LC2
-	jal	_print_string
-	move	$sp,$fp
-	lw	$ra,20($sp)
-	lw	$fp,16($sp)
-	addu	$sp,$sp,24
-	j	$ra
-	.rdata
-	.align	0
-	.align	2
-$LC3:
-	.asciiz	"primes_stat[0]"
-	.align	2
-$LC4:
-	.asciiz	"primes_auto[0]"
-	.text
-	.align	2
-	.set	nomips16
-main:
-	subu	$sp,$sp,64
-	sw	$ra,60($sp)
-	sw	$fp,56($sp)
-	move	$fp,$sp
-	li	$v0,2			# 0x2
-	sw	$v0,_primes_stat
-	li	$v0,3			# 0x3
-	sw	$v0,16($fp)
-	la	$a0,$LC3
-	lw	$a1,_primes_stat
-	jal	_print_var
-	la	$a0,$LC4
-	lw	$a1,16($fp)
-	jal	_print_var
-	move	$sp,$fp
-	lw	$ra,60($sp)
-	lw	$fp,56($sp)
-	addu	$sp,$sp,64
-	j	$ra
- 
-	.comm	_primes_stat,40
- 
-
 \end{verbatim}
 
-まずstaticについての説明を行う．
+だが、その直後で第一引数はその領域を越えて第一引数から第四引数を格納していることが分かる。
+
+\begin{verbatim} 
+	sw	$a0,24($fp)
+	sw	$a1,28($fp)
+	sw	$a2,32($fp)
+	sw	$a3,36($fp)
+\end{verbatim} 
+
+ここで、2つの疑問点が浮上した。
+
+まず、生成したスタックの領域を越えてデータを保存することは、プログラムがエラーを起こす原因になるのではないか。
+
+これは、gccコンパイラの仕様である。gccでは24バイトが最小スタックフレーム幅として設定されており、これは呼び出し側が渡す引数（第一引数から第四引数）を、呼び出し側のスタックフレームに格納するからである。
+
+次に、MIPSの仕様（手続き呼び出し規約）として第一引数から第四引数はスタックに格納せずに非呼び出し側関数に渡すのではなかったか。
+
+この疑問点に関しては、実質は非呼び出し側のスタックフレームには保存されていない。これがこのような挙動を行う利点である。なぜかというと、非呼び出し側からみると、第五引数以降は第四引数までとスタック上で連続することになるので、コンパイラ側でプログラムの変換がしやすいからである。
+
+
+
+
+\subsection{課題3}
+
+report2-1.cをMIPSプラットフォーム向けにコンパイルしたプログラムreport2-1.sを読むことで，C言語におけるauto変数とstatic変数を，アセンブリでどのように実現しているのかを理解する．
+
+mips-gccでコンパイルしたreport2-1.sはセクション7を参照。
+
+
+ソースに従い、まずstaticについての説明を行う．
 
 report2-1.sプログラムの最後に以下のような記述がある．
 
@@ -687,7 +636,106 @@ main:
 ここから，アセンブリ言語では，C言語のstatic変数をメモリに別の領域として確保して扱い，auto変数をプログラム中の関数のスタックに格納することによって，両者の性質を実現していることが分かる．
 
 
+% TODO: ポインタと配列の違いも
+
 \subsection{課題4}
+
+% printfなど、一部の関数は、任意の数の引数を取ることができる。これらの関数を可変引数関数と呼ぶ。MIPSのCコンパイラに置いて可変引数関数の実現方法について考察し、解説せよ。
+
+C言語において、ドット３つにおいて可変引数を取り出すために以下のような試行を行った。
+
+まず、以下のようなふたつのプログラム、main.cとmyprintf.cを作成する。
+
+\begin{verbatim}
+# main.c
+
+#include
+#include "myprintf.c"
+ 
+int main() {
+  char string[] = "Second Argument";
+  myprintf("Argument: %s", string);
+  return 0;
+}
+\end{verbatim}
+
+\begin{verbatim}
+# myprintf.c
+
+void myprintf(char *fmt, ...) {
+  printf("Format =>  %s\n", fmt);
+  printf("Address1 =>  %d\n", &fmt);
+  char *p = ((char*)&fmt) + 4;
+  printf("Address2 =>  %d\n", p);
+  printf("Second Argument => %s\n", p);
+}
+
+\end{verbatim}
+
+ここで、main.cをコンパイルして実行すると、以下のような出力を得る。
+
+\begin{verbatim}
+bash-4.1$ gcc main.c 
+bash-4.1$ ./a.out 
+Format =>  Argument: %s
+Address1 =>  1365075928
+Address2 =>  1365075932
+Second Argument => 
+\end{verbatim}
+
+得られた出力に関して解説を行う。
+
+まず、第一の
+
+\begin{verbatim}
+Format => Argument: %s
+\end{verbatim}
+
+より、第一引数の文字列（フォーマット）がきちんと渡っていることが分かる。また、その次の行の
+
+\begin{verbatim}
+Address1 =>  1365075928
+\end{verbatim}
+
+からは、\&fmtが生成した文字列の最初のアドレスをきちんと指していることがわかる。そして
+
+\begin{verbatim}
+char *p = ((char*)&fmt) + 4;
+\end{verbatim}
+
+で*pというポインタを生成した。これによりpはfmt（ポインタになっている）+4バイト先のレジスタ、つまり32bitコンピュータの1データ分下に格納されていることになっている。これは、その次の行、
+
+\begin{verbatim}
+printf("Address2 =>  %d\n", p);
+\end{verbatim}
+
+において
+
+\begin{verbatim}
+Address2 =>  1365075932
+\end{verbatim}
+
+が出力されることによりAddress1 + 4 = Address2になっていることを確認できる。
+
+ここで、Second Argumentという文字列を第二引数として渡したい。
+
+\begin{verbatim}
+第2引数は，アドレス = (旧$sp +04) からの 4バイトに格納されている事が分かります．
+参照：http://www.swlab.cs.okayama-u.ac.jp/~nom/lect/p3/what-is-va-arg.html
+\end{verbatim}
+
+これより、可変引数の場合スタックで第一引数の次にポップされることになるなのでここで*pは第二引数のアドレスを指しているはずであるので、*pが指しているデータを確認してみる。
+
+\begin{verbatim}
+Second Argument => 
+\end{verbatim}
+
+だが出力は以上のようになり、*pが指しているデータが空であることを示している。
+
+環境の違いの理由(32bitか64bitか）も考慮した試行を行ったので環境の違いが原因ではないようである。
+
+printf()関数がこのような表示の仕方に対応していないのではないかと推測した。
+
 
 \subsection{課題5}
 
@@ -749,6 +797,8 @@ main:
 それぞれについて，作成したプログラムは以下である．
 
 \subsection{課題1}
+
+\lstinputlisting[caption=hanoi.s, label=hanoi.s]{../../Second/hanoi.s}
 
 \lstinputlisting[caption=syscalls.s, label=syscalls.s]{../../Second/syscalls.s}
 
