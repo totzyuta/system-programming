@@ -22,7 +22,7 @@ void myprintf(char *fmt, ...) {
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
           print_int(i);
           break;
-          /*
+          /* 進数変換：うまく作動しない
         case 'x':
           // TODO: Process of %x: print as hexadecimal number
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
