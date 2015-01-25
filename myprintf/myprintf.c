@@ -22,38 +22,34 @@ void myprintf(char *fmt, ...) {
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
           print_int(i);
           break;
-          /*
         case 'x':
-          // TODO: Process of %x: print as hexadecimal number
+          // Process of %x: print as hexadecimal number
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
           str = (char *) malloc(15);
           while(i) {
-            int surplus = i % 16;
+            str = i % 16;
             if(10>*str){
-              *str = surplus;     // 0x30:0の文字コード
+              *str = '0';
             }else{
-              *str+=(0x41-0x0A);  //0x41:Aの文字コード
+              *str+='A' - 10;  
             }
             i/=16;
             str++;
           }
           print_string(str);
-          // printf("0x%s\n",str_ptr);
           break;
         case 'o':
-          // TODO: Process of %o: print as octal number
+          // Process of %o: print as octal number
           i = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
           str = (char *) malloc(15);
           while(i) {
-            int surplus = i % 8;
-            *str = surplus;     //0x30:0の文字コード
+            str = i % 8;
+            *str = '0';
             i/=8;
             str++; 
           }
           print_string(str);
-          // printf("0x%s\n",str_ptr);
           break;
-          */
         case 's':
           // Process of %s: print string
           s = *((int*) ((char *)&fmt + argc * sizeof(void *)) );
