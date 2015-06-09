@@ -1,1 +1,6 @@
 myprintf/a.out
+.DS_Store
+*.aux
+*.log
+*.out
+*.synctex.gz
